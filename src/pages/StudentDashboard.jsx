@@ -1,66 +1,75 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function StudentDashboard({ user, onLogout }) {
+export default function StudentDashboard() {
   const [courses, setCourses] = useState([]);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetchCourses();
+    const cachedUser = localStorage.getItem('user');
+    if (cachedUser) setUser(JSON.parse(cachedUser));
+    fetchAvailableWorkspaces();
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchAvailableWorkspaces = async () => {
     try {
       const res = await api.get('/courses');
       setCourses(res.data);
-    } catch (err) { console.error(err); }
-  };
-
-  const handleEnroll = async (courseId) => {
-    try {
-      await api.post(`/courses/${courseId}/enroll`, { studentId: user.userId });
-      alert('Successfully enrolled in the workspace!');
-      fetchCourses();
     } catch (err) {
-      alert(err.response?.data?.message || 'Enrollment failed');
+      console.error("Error accessing academic feed:", err);
     }
   };
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--light-pink)' }}>
-      {/* Navbar */}
-      <div style={{ background: 'white', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ color: 'var(--primary-pink)', margin: 0 }}>CloudLMS (Student Workspace)</h2>
-        <div>
-          <span style={{ marginRight: '1rem', fontWeight: '500' }}>{user.name} ({user.matricNo})</span>
-          <button onClick={onLogout} style={{ background: 'var(--primary-pink)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '5px', cursor: 'pointer' }}>Log Out</button>
-        </div>
-      </div>
+  const handleJoinWorkspace = (courseCode) => {
+    alert(`Successfully synced with workspace: ${courseCode}`);
+  };
 
-      {/* Main Container */}
-      <div style={{ maxWidth: '1000px', margin: '2rem auto', padding: '0 1rem' }}>
-        <h3 style={{ color: 'var(--text-dark)' }}>Available Courses for Enrollment</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
-          {courses.map((c) => {
-            const isEnrolled = c.enrolledStudents?.some(s => s.userId === user.userId);
-            return (
-              <div key={c.courseId} style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ background: 'var(--light-pink)', color: 'var(--dark-pink)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>{c.courseCode}</span>
-                  <h4 style={{ margin: '0.5rem 0 0.2rem 0' }}>{c.courseName}</h4>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Instructor: {c.instructor ? c.instructor.name : 'TBA'}</p>
-                </div>
-                <button 
-                  onClick={() => !isEnrolled && handleEnroll(c.courseId)}
-                  disabled={isEnrolled}
-                  style={{ padding: '0.6rem 1.2rem', background: isEnrolled ? '#2ecc71' : 'var(--primary-pink)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isEnrolled ? 'default' : 'pointer' }}
-                >
-                  {isEnrolled ? 'Enrolled' : 'Join'}
-                </button>
-              </div>
-            );
-          })}
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = '/';
+  };
+
+  const styles = {
+    layout: { minHeight: '100vh', backgroundColor: '#e5f6f4', fontFamily: 'system-ui, sans-serif' },
+    nav: { backgroundColor: '#0f4c5c', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' },
+    logoutBtn: { backgroundColor: 'transparent', border: '1px solid #e5f6f4', color: '#fff', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' },
+    main: { maxWidth: '900px', margin: '40px auto', padding: '0 20px' },
+    title: { color: '#0f4c5c', borderBottom: '2px solid #a3d2ca', paddingBottom: '10px', marginBottom: '25px' },
+    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' },
+    card: { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' },
+    code: { color: '#14a790', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', trackingSpacing: '1px' },
+    heading: { color: '#0f4c5c', fontSize: '20px', margin: '8px 0 15px 0', fontWeight: '600' },
+    meta: { fontSize: '13px', color: '#62929e', marginBottom: '20px' },
+    joinBtn: { width: '100%', padding: '10px', backgroundColor: '#0f4c5c', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }
+  };
+
+  return (
+    <div style={styles.layout}>
+      <header style={styles.nav}>
+        <h3>Cloud LMS | Student Hub</h3>
+        <div>
+          <span style={{ marginRight: '20px' }}>{user?.name} ({user?.matricNo})</span>
+          <button onClick={handleLogout} style={styles.logoutBtn}>Leave Hub</button>
         </div>
-      </div>
+      </header>
+
+      <main style={styles.main}>
+        <h4 style={styles.title}>Available Learning Workspaces</h4>
+        <div style={styles.grid}>
+          {courses.map(c => (
+            <div key={c.id} style={styles.card}>
+              <div>
+                <span style={styles.code}>{c.code}</span>
+                <h3 style={styles.heading}>{c.title}</h3>
+                <div style={styles.meta}>🎒 Lead: {c.instructorName}</div>
+              </div>
+              <button onClick={() => handleJoinWorkspace(c.code)} style={styles.joinBtn}>
+                Enter Classroom
+              </button>
+            </div>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function InstructorDashboard({ user, onLogout }) {
+export default function InstructorDashboard() {
   const [courses, setCourses] = useState([]);
-  const [courseCode, setCourseCode] = useState('');
-  const [courseName, setCourseName] = useState('');
-  const [capacity, setCapacity] = useState(30);
-  const [activeTab, setActiveTab] = useState('courses');
+  const [newCourse, setNewCourse] = useState({ title: '', code: '' });
+  const [user, setUser] = useState(null);
+  const [msg, setMsg] = useState({ type: '', text: '' });
 
   useEffect(() => {
+    const cachedUser = localStorage.getItem('user');
+    if (cachedUser) setUser(JSON.parse(cachedUser));
     fetchCourses();
   }, []);
 
@@ -16,67 +17,90 @@ export default function InstructorDashboard({ user, onLogout }) {
     try {
       const res = await api.get('/courses');
       setCourses(res.data);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Error fetching workspaces:", err);
+    }
   };
 
   const handleCreateCourse = async (e) => {
     e.preventDefault();
+    setMsg({ type: '', text: '' });
     try {
-      await api.post('/courses', { 
-        courseCode, 
-        courseName, 
-        enrollmentCapacity: capacity, 
-        instructor: { userId: user.userId } 
+      // Maps accurately to backend Course entity payload constraints
+      await api.post('/courses', {
+        title: newCourse.title,
+        code: newCourse.code,
+        instructorName: user?.name || 'Instructor'
       });
-      setCourseCode(''); setCourseName('');
+      setMsg({ type: 'success', text: 'New learning workspace launched successfully!' });
+      setNewCourse({ title: '', code: '' });
       fetchCourses();
-    } catch (err) { alert('Failed to create course'); }
+    } catch (err) {
+      setMsg({ type: 'error', text: 'Failed to create workspace. Verify if code is unique.' });
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = '/';
+  };
+
+  const styles = {
+    layout: { minHeight: '100vh', backgroundColor: '#e5f6f4', fontFamily: 'system-ui, sans-serif' },
+    nav: { backgroundColor: '#0f4c5c', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' },
+    logoutBtn: { backgroundColor: 'transparent', border: '1px solid #e5f6f4', color: '#fff', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' },
+    main: { maxWIdth: '1000px', margin: '40px auto', padding: '0 20px', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px' },
+    card: { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(15,76,92,0.05)' },
+    title: { color: '#0f4c5c', marginBottom: '20px', marginTop: 0 },
+    formGroup: { marginBottom: '15px' },
+    label: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#0f4c5c', marginBottom: '5px' },
+    input: { width: '100%', padding: '10px', borderRadius: '6px', border: '1.5px solid #a3d2ca', boxSizing: 'border-box' },
+    btn: { width: '100%', padding: '12px', backgroundColor: '#14a790', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
+    grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' },
+    item: { backgroundColor: '#fff', padding: '20px', borderRadius: '8px', borderLeft: '5px solid #14a790', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
+    banner: { padding: '10px', borderRadius: '6px', fontSize: '13px', marginBottom: '15px', color: '#fff', backgroundColor: msg.type === 'success' ? '#14a790' : '#c62828' }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--light-pink)' }}>
-      {/* Navbar */}
-      <div style={{ background: 'white', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ color: 'var(--primary-pink)', margin: 0 }}>CloudLMS (Instructor Portal)</h2>
+    <div style={styles.layout}>
+      <header style={styles.nav}>
+        <h3>Cloud LMS | Instructor Console</h3>
         <div>
-          <span style={{ marginRight: '1rem', fontWeight: '500' }}>Welcome, Dr. {user.name}</span>
-          <button onClick={onLogout} style={{ background: 'var(--primary-pink)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '5px', cursor: 'pointer' }}>Log Out</button>
+          <span style={{ marginRight: '20px' }}>Welcome, {user?.name}</span>
+          <button onClick={handleLogout} style={styles.logoutBtn}>Exit Console</button>
         </div>
-      </div>
-
-      {/* Main Container */}
-      <div style={{ maxWidth: '1000px', margin: '2rem auto', padding: '0 1rem' }}>
-        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(255,107,139,0.08)' }}>
-          <h3 style={{ borderBottom: '2px solid var(--light-pink)', paddingBottom: '0.5rem' }}>Create a New Course</h3>
-          <form onSubmit={handleCreateCourse} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr auto', gap: '1rem', alignItems: 'end', marginTop: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600' }}>Course Code</label>
-              <input type="text" required value={courseCode} onChange={(e) => setCourseCode(e.target.value)} placeholder="e.g. FSKM3100" style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #ffd1dc', outline: 'none' }} />
+      </header>
+      
+      <main style={styles.main}>
+        <section style={styles.card}>
+          <h4 style={styles.title}>Launch Workspace</h4>
+          {msg.text && <div style={styles.banner}>{msg.text}</div>}
+          <form onSubmit={handleCreateCourse}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Course Title</label>
+              <input type="text" style={styles.input} required value={newCourse.title} placeholder="e.g. System Architecture" onChange={e => setNewCourse({...newCourse, title: e.target.value})} />
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600' }}>Course Name</label>
-              <input type="text" required value={courseName} onChange={(e) => setCourseName(e.target.value)} placeholder="e.g. Cloud Application Architecture" style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #ffd1dc', outline: 'none' }} />
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Course Code</label>
+              <input type="text" style={styles.input} required value={newCourse.code} placeholder="e.g. CSF3103" onChange={e => setNewCourse({...newCourse, code: e.target.value})} />
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600' }}>Capacity</label>
-              <input type="number" required value={capacity} onChange={(e) => setCapacity(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #ffd1dc', outline: 'none' }} />
-            </div>
-            <button type="submit" style={{ padding: '0.6rem 1.2rem', background: 'var(--primary-pink)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Add Course</button>
+            <button type="submit" style={styles.btn}>Deploy Course</button>
           </form>
-        </div>
+        </section>
 
-        {/* Catalog */}
-        <h3 style={{ marginTop: '2rem', color: 'var(--text-dark)' }}>Active Course Catalog</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
-          {courses.map((c) => (
-            <div key={c.courseId} style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', borderLeft: '5px solid var(--primary-pink)' }}>
-              <span style={{ background: 'var(--light-pink)', color: 'var(--dark-pink)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>{c.courseCode}</span>
-              <h4 style={{ margin: '0.5rem 0' }}>{c.courseName}</h4>
-              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>Capacity: {c.enrollmentCapacity} Seats Max</p>
-            </div>
-          ))}
-        </div>
-      </div>
+        <section>
+          <h4 style={{ ...styles.title, margin: '0 0 20px 0' }}>Active Cloud Classrooms</h4>
+          <div style={styles.grid}>
+            {courses.map(c => (
+              <div key={c.id} style={styles.item}>
+                <b style={{ color: '#0f4c5c', fontSize: '18px' }}>{c.code}</b>
+                <div style={{ color: '#62929e', margin: '5px 0 10px 0', fontSize: '14px' }}>{c.title}</div>
+                <small style={{ color: '#14a790', fontWeight: '500' }}>Host: {c.instructorName}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
