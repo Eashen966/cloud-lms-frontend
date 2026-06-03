@@ -1,25 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
 import InstructorDashboard from './pages/InstructorDashboard';
 
 function App() {
-  const [user, setUser] = useState(null);
+  // FIX 1: Initialize user from localStorage so page refresh doesn't log out
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const handleLoginSuccess = (loggedInUser) => {
     setUser(loggedInUser);
   };
 
   const handleLogout = () => {
+    localStorage.clear();
     setUser(null);
   };
 
-  // 1. Unauthenticated Gateway Gate
+  // Unauthenticated Gateway
   if (!user) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // 2. Role-Based Dynamic Structural Gateway Routing
+  // Role-Based Routing — matches backend enum INSTRUCTOR / STUDENT
   if (user.role === 'INSTRUCTOR') {
     return <InstructorDashboard user={user} onLogout={handleLogout} />;
   }
@@ -28,4 +33,3 @@ function App() {
 }
 
 export default App;
-// Avoid LaTeX rendering in prose
