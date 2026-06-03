@@ -8,7 +8,7 @@ export default function AuthPage() {
     matricNo: '',
     programme: '',
     password: '',
-    role: 'Student'
+    role: 'STUDENT'   // FIX 2: match backend enum (STUDENT not Student)
   });
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -38,19 +38,19 @@ export default function AuthPage() {
         localStorage.setItem('user', JSON.stringify(response.data));
         setSuccessMsg('Access granted! Entering workspace...');
         
-        // Redirect logic to dashboards based on response.data.role
+        // FIX 3: match backend enum INSTRUCTOR not Instructor
         setTimeout(() => {
-          window.location.href = response.data.role === 'Instructor' ? '/instructor-dashboard' : '/student-dashboard';
+          window.location.href = response.data.role === 'INSTRUCTOR' ? '/instructor-dashboard' : '/student-dashboard';
         }, 1000);
 
       } else {
-        // REGISTRATION STREAM (Only maps fields present in DB schema)
+        // REGISTRATION STREAM
         const payload = {
           name: formData.name,
           matricNo: formData.matricNo,
           programme: formData.programme,
-          password: formData.password,
-          role: formData.role
+          passwordHash: formData.password,   // FIX 1: renamed from password → passwordHash to match User model field
+          role: formData.role                // FIX 2: now sends STUDENT or INSTRUCTOR
         };
         await api.post('/users/register', payload);
         setSuccessMsg('Account created successfully! Redirecting to login...');
@@ -209,6 +209,22 @@ export default function AuthPage() {
             </div>
           )}
 
+          {/* REGISTRATION ONLY FIELD: EMAIL */}
+          {!isLogin && (
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Email Address</label>
+              <input
+                type="email"
+                name="email"
+                required
+                style={styles.input}
+                value={formData.email || ''}
+                onChange={handleInputChange}
+                placeholder="e.g. student@university.edu"
+              />
+            </div>
+          )}
+
           {/* REQUIRED FIELD FOR BOTH LOGIN & REGISTRATION */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Matric Number / Staff ID</label>
@@ -253,7 +269,7 @@ export default function AuthPage() {
             />
           </div>
 
-          {/* REGISTRATION ONLY FIELD: ROLE ROLE SELECTOR */}
+          {/* REGISTRATION ONLY FIELD: ROLE SELECTOR */}
           {!isLogin && (
             <div style={styles.formGroup}>
               <label style={styles.label}>Account Workspace Type</label>
@@ -263,8 +279,8 @@ export default function AuthPage() {
                 value={formData.role}
                 onChange={handleInputChange}
               >
-                <option value="Student">Student Space</option>
-                <option value="Instructor">Instructor Console</option>
+                <option value="STUDENT">Student Space</option>
+                <option value="INSTRUCTOR">Instructor Console</option>
               </select>
             </div>
           )}
