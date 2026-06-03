@@ -1,0 +1,19 @@
+:root {
+  --primary-pink: #ff6b8b;
+  --light-pink: #fff0f3;
+  --dark-pink: #d94663;
+  --pure-white: #ffffff;
+  --text-dark: #2c3e50;
+  --text-muted: #7f8c8d;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--light-pink);
+  color: var(--text-dark);
+}
+
+* {
+  box-sizing: border-box;
+}
