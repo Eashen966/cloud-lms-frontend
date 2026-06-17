@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://cloud-lms-backend.onrender.com/api', // added /api here!
+  baseURL: 'http://localhost:8080/api', // Local backend for testing
 });
 
 export default api;
